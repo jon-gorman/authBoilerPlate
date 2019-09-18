@@ -19,7 +19,7 @@ mongoose.connect('mongodb://localhost/auth-boiler', {
 
 //Load idea Model
 require('./models/Idea');
-const Idea = mongoose.model('Ideas')
+const Idea = mongoose.model('ideas')
 
 
 //Express handlebars middleware
@@ -47,9 +47,29 @@ app.get('/about', function(req, res){
   res.render('about');
 });
 
+
+//Idea Index Page
+app.get('/ideas', function(req, res){
+  //Bring in the data from mongodb
+  Idea.find({})
+    .sort({date: 'desc'})
+    .then(function(ideas){
+      res.render('ideas/index', {
+        ideas: ideas
+      })
+    })
+});
+
+//Add idea form
 app.get('/ideas/add', function(req, res){
   res.render('ideas/add')
 });
+
+//Add idea form
+app.get('/ideas/add', function(req, res){
+  res.render('ideas/add')
+});
+
 
 //Process Form
 app.post('/ideas', function(req, res){
@@ -67,8 +87,17 @@ app.post('/ideas', function(req, res){
       title: req.body.title,
       details: req.body.details
     })
+    //end of validation
   } else {
-    res.send('passed')
+    const newUser = {
+      title: req.body.title,
+      details: req.body.details
+    };
+    new Idea(newUser)
+      .save()
+      .then(function(idea) {
+        res.redirect('/ideas');
+      })
   }
   // console.log(req.body);
   // res.send('ok')
