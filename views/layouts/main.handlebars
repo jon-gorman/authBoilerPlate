@@ -9,6 +9,7 @@
 	<meta http-equiv="X-UA-Compatible" content="ie=edge">
 	<!--Bootstrap 4-->
 	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+	<link rel="stylesheet" href="/css/style.css">
 	<title>AuthBoilerPlate</title>
 </head>
 <body>
@@ -17,6 +18,8 @@
 <div class="container">
 <!--Flash Message from msg Partial-->
 {{> _msg}}
+	<!--errors from errors partials!-->
+{{> _errors}}
 <!--tripple handlebars and wrapped body will load the index.handlebars file-->
 {{{body}}}
 </div>

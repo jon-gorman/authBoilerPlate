@@ -1,13 +1,24 @@
 const express = require('express');
+//path is for connecting files in public folder
+const path = require('path');
 const exphbs = require('express-handlebars');
 const methodOverride = require('method-override');
 const flash = require('connect-flash');
-const session = require('express-session')
+const session = require('express-session');
 const bodyParser = require('body-parser');
+const passport = require('passport');
 const mongoose = require('mongoose');
 
 
+
 const app = express();
+
+// Load Routes from Routes file
+const ideas = require('./routes/ideas');
+const users = require('./routes/users');
+
+//Passport config
+require('./config/passport')(passport);
 
 //Map global promise - get rid of warning
 mongoose.Promise = global.Promise;
@@ -20,10 +31,6 @@ mongoose.connect('mongodb://localhost/auth-boiler', {
   console.log('Mongodb Connected')
 }).catch(err => console.log(err));
 
-//Load idea Model
-require('./models/Idea');
-const Idea = mongoose.model('ideas')
-
 
 //Express handlebars middleware
 app.engine('handlebars', exphbs({
@@ -34,6 +41,11 @@ app.set('view engine', 'handlebars');
 //Body Parser Middleware
 app.use(bodyParser.urlencoded({ extended: false}));
 app.use(bodyParser.json());
+
+
+//Static folder brings in the public folder and joins it
+//express folder to the static folder
+app.use(express.static(path.join(__dirname, 'public')))
 
 //Method override MiddleWare
 app.use(methodOverride('_method'));
@@ -46,6 +58,11 @@ app.use(session({
   saveUninitialized: true,
 }));
 
+//Passport middleware
+//this needs to go after express session
+//Straight form docs
+app.use(passport.initialize());
+app.use(passport.session());
 
 //Flash middleware
 app.use(flash())
@@ -55,6 +72,8 @@ app.use(function(req, res, next){
   res.locals.success_msg = req.flash('success_msg');
   res.locals.error_msg = req.flash('error_msg');
   res.locals.error = req.flash('error');
+  //this is for only logged in!
+  res.locals.user = req.user || null;
   next();
 });
 
@@ -73,97 +92,11 @@ app.get('/about', function(req, res){
 });
 
 
-//Idea Index Page
-app.get('/ideas', function(req, res){
-  //Bring in the data from mongodb
-  Idea.find({})
-    .sort({date: 'desc'})
-    .then(function(ideas){
-      res.render('ideas/index', {
-        ideas: ideas
-      })
-    })
-});
-
-//Add idea form
-app.get('/ideas/add', function(req, res){
-  res.render('ideas/add')
-});
-
-//Edit idea form
-app.get('/ideas/edit/:id', function(req, res){
-  Idea.findOne({
-    // req.params.id returns only the id value. req.params will return key value pair i.e. "id: 123455..."
-    _id: req.params.id
-  })
-    .then(function(idea){
-      res.render('ideas/edit', {
-        idea: idea
-      })
-    })
-});
 
 
-//Process Form
-app.post('/ideas', function(req, res){
-  //Server side validation
-  let errors = [];
-  if(!req.body.title){
-    errors.push({text: "Please add a Title"})
-  }
-  if(!req.body.details){
-    errors.push({text: "Please add some Details"})
-  }
-  if(errors.length > 0){
-    res.render('ideas/add', {
-      errors: errors,
-      title: req.body.title,
-      details: req.body.details
-    })
-    //end of validation
-  } else {
-    const newUser = {
-      title: req.body.title,
-      details: req.body.details
-    };
-    new Idea(newUser)
-      .save()
-      .then(function(idea) {
-        req.flash('success_msg', 'idea has been added');
-
-        res.redirect('/ideas');
-      })
-  }
-  // console.log(req.body);
-  // res.send('ok')
-});
-
-//Edit Form Process
-
-app.put('/ideas/:id', function(req, res){
-  Idea.findOne({
-    _id: req.params.id
-  })
-    .then(function(idea){
-      //new values
-      idea.title = req.body.title;
-      idea.details = req.body.details;
-      idea.save()
-        .then(function(idea){
-          req.flash('success_msg', 'idea has been updated');
-          res.redirect('/ideas')
-        })
-    })
-});
-
-//Delete Idea
-app.delete('/ideas/:id', function(req, res){
-  Idea.deleteOne({_id: req.params.id})
-    .then(function(){
-      req.flash('success_msg', 'idea has been removed');
-      res.redirect('/ideas')
-    });
-});
+//Use routes
+app.use('/ideas', ideas);
+app.use('/users', users);
 
 const port = 5010;
 
