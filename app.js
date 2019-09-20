@@ -17,14 +17,20 @@ const app = express();
 const ideas = require('./routes/ideas');
 const users = require('./routes/users');
 
+//dotenv
+// require('dotenv').config()
+
 //Passport config
 require('./config/passport')(passport);
+
+//DB config
+const db = require('./config/database')
 
 //Map global promise - get rid of warning
 mongoose.Promise = global.Promise;
 
 // Connect to mongoose here
-mongoose.connect('mongodb://localhost/auth-boiler', {
+mongoose.connect(db.mongoURI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 }).then(function() {
@@ -98,8 +104,12 @@ app.get('/about', function(req, res){
 app.use('/ideas', ideas);
 app.use('/users', users);
 
-const port = 5010;
+
+//need this for heroku as well as node start script in the package.json file.
+const port = process.env.PORT || 5010;
 
 app.listen(port, function(){
   console.log(`the boilerPlate server is listening on port ${port}`)
 })
+
+
